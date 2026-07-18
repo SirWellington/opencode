@@ -335,8 +335,9 @@ const main = Effect.gen(function* () {
 
     return yield* Deferred.await(res)
   })
-  const hostname = process.env.OPENCODE_SERVER_HOST ?? "127.0.0.1"
-  const url = `http://${hostname}:${port}`
+  const bindHostname = process.env.OPENCODE_SERVER_HOST ?? "127.0.0.1"
+  const connectHostname = bindHostname === "0.0.0.0" ? "127.0.0.1" : bindHostname
+  const url = `http://${connectHostname}:${port}`
   const password = process.env.OPENCODE_SERVER_PASSWORD ?? randomUUID()
   const username = process.env.OPENCODE_SERVER_USERNAME ?? "opencode"
 
@@ -348,7 +349,7 @@ const main = Effect.gen(function* () {
 
     logger.log("spawning sidecar", { url })
     const { listener, health } = yield* Effect.promise(() =>
-      spawnLocalServer(hostname, port, password, username, {
+      spawnLocalServer(bindHostname, port, password, username, {
         userDataPath: app.getPath("userData"),
         onStdout: (message) => writeLog("server", "stdout", { message }),
         onStderr: (message) => writeLog("server", "stderr", { message }, "warn"),

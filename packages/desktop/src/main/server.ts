@@ -27,6 +27,10 @@ type SpawnLocalServerOptions = {
   onExit?: (code: number) => void
 }
 
+function connectHostname(hostname: string) {
+  return hostname === "0.0.0.0" ? "127.0.0.1" : hostname
+}
+
 export function getDefaultServerUrl(): string | null {
   const value = getStore().get(DEFAULT_SERVER_URL_KEY)
   return typeof value === "string" ? value : null
@@ -142,7 +146,7 @@ export async function spawnLocalServer(
   })
 
   const wait = (async () => {
-    const url = `http://${hostname}:${port}`
+    const url = `http://${connectHostname(hostname)}:${port}`
     let healthy = false
     const gone = exit.promise.then((code) => {
       if (healthy) return
