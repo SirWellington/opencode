@@ -116,6 +116,7 @@ function getConfig() {
         ...base,
         appId,
         productName: "OpenCode Dev",
+        publish: [],
         rpm: { packageName: "opencode-dev" },
       }
     }
