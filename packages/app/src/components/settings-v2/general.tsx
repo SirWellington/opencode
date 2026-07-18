@@ -691,7 +691,7 @@ export const SettingsGeneralV2: Component<{
       </div>
 
       <div class="settings-v2-tab-body">
-        <Show when={settings.general.layoutTransitionAvailable()}>
+        <Show when={settings.general.canToggleLayout()}>
           <InterfaceSection />
         </Show>
 

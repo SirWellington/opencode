@@ -745,7 +745,7 @@ export const SettingsGeneral: Component = () => {
       </div>
 
       <div class="flex flex-col gap-8 w-full">
-        <Show when={settings.general.layoutTransitionAvailable()}>
+        <Show when={settings.general.canToggleLayout()}>
           <InterfaceSection />
         </Show>
 

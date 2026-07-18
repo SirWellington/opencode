@@ -56,6 +56,7 @@ export async function spawnLocalServer(
   hostname: string,
   port: number,
   password: string,
+  username: string,
   options: SpawnLocalServerOptions,
 ) {
   const sidecar = join(dirname(fileURLToPath(import.meta.url)), "sidecar.js")
@@ -132,6 +133,7 @@ export async function spawnLocalServer(
       hostname,
       port,
       password,
+      username,
       userDataPath: options.userDataPath,
     })
   }).catch((error) => {
@@ -150,7 +152,7 @@ export async function spawnLocalServer(
     const ready = async () => {
       while (true) {
         await new Promise((resolve) => setTimeout(resolve, 100))
-        if (await checkHealth(url, password)) {
+        if (await checkHealth(url, password, username)) {
           healthy = true
           return
         }
@@ -181,7 +183,7 @@ export async function spawnLocalServer(
   }
 }
 
-export async function checkHealth(url: string, password?: string | null): Promise<boolean> {
+export async function checkHealth(url: string, password?: string | null, username = "opencode"): Promise<boolean> {
   let healthUrl: URL
   try {
     healthUrl = new URL("/global/health", url)
@@ -191,7 +193,7 @@ export async function checkHealth(url: string, password?: string | null): Promis
 
   const headers = new Headers()
   if (password) {
-    const auth = Buffer.from(`opencode:${password}`).toString("base64")
+    const auth = Buffer.from(`${username}:${password}`).toString("base64")
     headers.set("authorization", `Basic ${auth}`)
   }
 

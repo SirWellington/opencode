@@ -21,8 +21,8 @@ export async function spawnWslSidecar(
   if (!opencode) throw new Error(`OpenCode is not installed in ${distro}`)
 
   const port = await allocatePort()
-  const password = randomUUID()
-  const username = "opencode"
+  const password = process.env.OPENCODE_SERVER_PASSWORD ?? randomUUID()
+  const username = process.env.OPENCODE_SERVER_USERNAME ?? "opencode"
   const script = [
     "set -euo pipefail",
     'cd "$HOME" || cd /',
@@ -58,7 +58,7 @@ export async function spawnWslSidecar(
   })
   const url = `http://127.0.0.1:${port}`
   const startup = new AbortController()
-  const health = pollWslHealth(() => checkHealth(url, password), startup.signal)
+  const health = pollWslHealth(() => checkHealth(url, password, username), startup.signal)
   const timeoutMs = opts.healthTimeoutMs ?? 30_000
   let timeout: ReturnType<typeof setTimeout>
   const timedOut = new Promise<never>(
