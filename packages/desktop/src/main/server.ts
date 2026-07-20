@@ -27,7 +27,8 @@ type SpawnLocalServerOptions = {
   onExit?: (code: number) => void
 }
 
-function connectHostname(hostname: string) {
+// When bound to 0.0.0.0 the server listens on all interfaces, but health checks must connect via loopback.
+function resolveClientHostname(hostname: string) {
   return hostname === "0.0.0.0" ? "127.0.0.1" : hostname
 }
 

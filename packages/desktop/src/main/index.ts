@@ -335,6 +335,8 @@ const main = Effect.gen(function* () {
 
     return yield* Deferred.await(res)
   })
+  // OPENCODE_SERVER_HOST controls which interface the server binds to (use "0.0.0.0" for all interfaces).
+  // The local renderer still connects via 127.0.0.1 so it works whether bound locally or globally.
   const bindHostname = process.env.OPENCODE_SERVER_HOST ?? "127.0.0.1"
   const connectHostname = bindHostname === "0.0.0.0" ? "127.0.0.1" : bindHostname
   const url = `http://${connectHostname}:${port}`
