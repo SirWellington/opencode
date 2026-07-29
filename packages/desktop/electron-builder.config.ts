@@ -128,6 +128,7 @@ function getConfig() {
         ...base,
         appId,
         productName: "OpenCode Dev",
+        publish: false,
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencode-dev", fpm: [metainfoFpm(appId)] },
       }
