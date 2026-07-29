@@ -57,6 +57,7 @@ export function preferAppEnv(userDataPath: string) {
 export async function spawnLocalServer(
   hostname: string,
   port: number,
+  username: string,
   password: string,
   options: SpawnLocalServerOptions,
 ) {
@@ -133,6 +134,7 @@ export async function spawnLocalServer(
       type: "start",
       hostname,
       port,
+      username,
       password,
       userDataPath: options.userDataPath,
     })
@@ -152,7 +154,7 @@ export async function spawnLocalServer(
     const ready = async () => {
       while (true) {
         await new Promise((resolve) => setTimeout(resolve, 100))
-        if (await checkHealth(url, password)) {
+        if (await checkHealth(url, username, password)) {
           healthy = true
           return
         }
@@ -183,7 +185,7 @@ export async function spawnLocalServer(
   }
 }
 
-export async function checkHealth(url: string, password?: string | null): Promise<boolean> {
+export async function checkHealth(url: string, username = "opencode", password?: string | null): Promise<boolean> {
   let healthUrls: URL[]
   try {
     healthUrls = [new URL("/api/health", url), new URL("/global/health", url)]
@@ -193,7 +195,7 @@ export async function checkHealth(url: string, password?: string | null): Promis
 
   const headers = new Headers()
   if (password) {
-    const auth = Buffer.from(`opencode:${password}`).toString("base64")
+    const auth = Buffer.from(`${username}:${password}`).toString("base64")
     headers.set("authorization", `Basic ${auth}`)
   }
 
