@@ -48,6 +48,22 @@ type TerminalColors = {
   foreground: string
   cursor: string
   selectionBackground: string
+  black: string
+  red: string
+  green: string
+  yellow: string
+  blue: string
+  magenta: string
+  cyan: string
+  white: string
+  brightBlack: string
+  brightRed: string
+  brightGreen: string
+  brightYellow: string
+  brightBlue: string
+  brightMagenta: string
+  brightCyan: string
+  brightWhite: string
 }
 
 const DEFAULT_TERMINAL_COLORS: Record<"light" | "dark", TerminalColors> = {
@@ -56,12 +72,45 @@ const DEFAULT_TERMINAL_COLORS: Record<"light" | "dark", TerminalColors> = {
     foreground: "#211e1e",
     cursor: "#211e1e",
     selectionBackground: withAlpha("#211e1e", 0.2),
+    // Dark-on-light ANSI palette: every color stays readable on the light background.
+    black: "#24292e",
+    red: "#cd3131",
+    green: "#0d904f",
+    yellow: "#24292e",
+    blue: "#2472c8",
+    magenta: "#b132a5",
+    cyan: "#0e7c86",
+    white: "#666666",
+    brightBlack: "#555555",
+    brightRed: "#cd3131",
+    brightGreen: "#0d904f",
+    brightYellow: "#24292e",
+    brightBlue: "#2472c8",
+    brightMagenta: "#b132a5",
+    brightCyan: "#0e7c86",
+    brightWhite: "#24292e",
   },
   dark: {
     background: "#191515",
     foreground: "#d4d4d4",
     cursor: "#d4d4d4",
     selectionBackground: withAlpha("#d4d4d4", 0.25),
+    black: "#000000",
+    red: "#cd3131",
+    green: "#0dbc79",
+    yellow: "#e5e510",
+    blue: "#2472c8",
+    magenta: "#bc3fbc",
+    cyan: "#11a8cd",
+    white: "#e5e5e5",
+    brightBlack: "#666666",
+    brightRed: "#f14c4c",
+    brightGreen: "#23d18b",
+    brightYellow: "#f5f543",
+    brightBlue: "#3b8eea",
+    brightMagenta: "#d670d6",
+    brightCyan: "#29b8db",
+    brightWhite: "#ffffff",
   },
 }
 
@@ -279,6 +328,7 @@ export const Terminal = (props: TerminalProps) => {
     const base = text.startsWith("#") ? (text as HexColor) : (fallback.foreground as HexColor)
     const selectionBackground = withAlpha(base, alpha)
     return {
+      ...fallback,
       background,
       foreground: text,
       cursor: text,
