@@ -929,6 +929,7 @@ export const dict = {
   "settings.general.section.display": "Zaslon",
   "settings.general.row.language.title": "Jezik",
   "settings.general.row.language.description": "Spremenite jezik prikaza za OpenCode",
+  "settings.permissions.autoaccept.global.title": "Samodejno sprejemanje dovoljenj za vse seje",
   "settings.general.row.shell.title": "Končna lupina",
   "settings.general.row.shell.description": "Lupina, ki jo uporabljajo terminalska in agentska orodja",
   "settings.general.row.shell.autoDefault": "Samodejno (privzeto)",

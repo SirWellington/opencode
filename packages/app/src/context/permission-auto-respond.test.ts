@@ -104,6 +104,33 @@ describe("autoRespondsPermission", () => {
 
     expect(autoRespondsPermission(autoAccept, sessions, permission("child"), directory)).toBe(true)
   })
+
+  test("uses the global fallback when no session or directory value exists", () => {
+    const sessions = [session({ id: "root" })]
+
+    expect(autoRespondsPermission({}, sessions, permission("root"), "/tmp/project", true)).toBe(true)
+    expect(autoRespondsPermission({}, sessions, permission("root"), "/tmp/project")).toBe(false)
+  })
+
+  test("an explicit session override wins over the global fallback", () => {
+    const directory = "/tmp/project"
+    const sessions = [session({ id: "root" }), session({ id: "child", parentID: "root" })]
+    const autoAccept = {
+      [`${base64Encode(directory)}/root`]: false,
+    }
+
+    expect(autoRespondsPermission(autoAccept, sessions, permission("child"), directory, true)).toBe(false)
+  })
+
+  test("an explicit directory override wins over the global fallback", () => {
+    const directory = "/tmp/project"
+    const sessions = [session({ id: "root" })]
+    const autoAccept = {
+      [`${base64Encode(directory)}/*`]: false,
+    }
+
+    expect(autoRespondsPermission(autoAccept, sessions, permission("root"), directory, true)).toBe(false)
+  })
 })
 
 describe("isDirectoryAutoAccepting", () => {

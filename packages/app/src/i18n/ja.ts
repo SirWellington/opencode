@@ -832,6 +832,7 @@ export const dict = {
   "settings.general.section.display": "ディスプレイ",
   "settings.general.row.language.title": "言語",
   "settings.general.row.language.description": "OpenCodeの表示言語を変更します",
+  "settings.permissions.autoaccept.global.title": "すべてのセッションで権限を自動承認します",
   "settings.general.row.shell.title": "ターミナルシェル",
   "settings.general.row.shell.description":
     "ターミナルで使用するシェルを選択します。互換性のあるシェルはエージェントのツール呼び出しにも使用されます。",

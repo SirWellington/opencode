@@ -939,6 +939,7 @@ export const dict = {
   "settings.general.section.display": "Ekranas",
   "settings.general.row.language.title": "Kalba",
   "settings.general.row.language.description": "Pakeiskite OpenCode ekrano kalbą",
+  "settings.permissions.autoaccept.global.title": "Automatiškai priimti leidimus visiems seansams",
   "settings.general.row.shell.title": "Terminalo apvalkalas",
   "settings.general.row.shell.description": "Terminalo ir agento įrankių naudojamas apvalkalas",
   "settings.general.row.shell.autoDefault": "Automatinis (numatytasis)",

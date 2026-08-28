@@ -142,6 +142,58 @@ test("auto-accept responds for an unfocused server session", async ({ page }) =>
     ])
 })
 
+test("global auto-accept responds without per-session settings", async ({ page }) => {
+  const permissionResponses: PermissionResponse[] = []
+  const transport = await installSseTransport<{ directory: string; payload: Record<string, unknown> }>(page, {
+    server: serverA,
+    retry: 20,
+  })
+  await mockServers(page, [], permissionResponses)
+  await configureServers(page, [
+    { type: "session", server: serverA, sessionId: sessionA.id },
+  ])
+
+  await page.goto(`/server/${base64Encode(serverA)}/session/${sessionA.id}`)
+  await expect(page.getByText(sessionA.title).first()).toBeVisible()
+  await page.keyboard.press("Control+,")
+
+  const globalAccept = page.locator(".settings-v2-dialog").locator('[data-action="settings-auto-accept-permissions-global"]')
+  await expect(globalAccept).toBeVisible()
+  await expect(globalAccept.getByRole("switch")).toBeEnabled()
+  await globalAccept.locator('[data-slot="switch-control"]').click()
+  await expect(globalAccept.getByRole("switch")).toBeChecked()
+  await page.keyboard.press("Escape")
+  await transport.waitForConnection()
+
+  await transport.send({
+    directory: directoryA,
+    payload: {
+      id: "event-permission-global-a",
+      type: "permission.asked",
+      properties: {
+        id: "permission-global-a",
+        sessionID: sessionA.id,
+        permission: "bash",
+        patterns: ["git status"],
+        metadata: {},
+        always: [],
+      },
+    },
+  })
+
+  await expect
+    .poll(() => permissionResponses)
+    .toEqual([
+      {
+        origin: serverA,
+        directory: directoryA,
+        sessionID: sessionA.id,
+        permissionID: "permission-global-a",
+        body: { response: "once" },
+      },
+    ])
+})
+
 type PermissionResponse = {
   origin: string
   directory?: string

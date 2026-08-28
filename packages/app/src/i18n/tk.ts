@@ -925,6 +925,7 @@ export const dict = {
   "settings.general.section.display": "Ekran",
   "settings.general.row.language.title": "Dil",
   "settings.general.row.language.description": "OpenCode üçin displeý dilini üýtgediň",
+  "settings.permissions.autoaccept.global.title": "Ähli sessiýalar üçin rugsatlary awtomatiki kabul ediň",
   "settings.general.row.shell.title": "Terminal shell-i",
   "settings.general.row.shell.description": "Terminal we agent gurallary tarapyndan ulanylýan shell",
   "settings.general.row.shell.autoDefault": "Awto (Bellenilen)",

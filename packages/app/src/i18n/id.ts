@@ -1005,6 +1005,7 @@ export const dict = {
 
   "settings.general.row.language.title": "Bahasa",
   "settings.general.row.language.description": "Ubah bahasa tampilan untuk OpenCode",
+  "settings.permissions.autoaccept.global.title": "Terima izin otomatis untuk semua sesi",
   "settings.general.row.shell.title": "Shell terminal",
   "settings.general.row.shell.description": "Shell yang digunakan oleh terminal dan alat agen",
   "settings.general.row.shell.autoDefault": "Otomatis (Bawaan)",

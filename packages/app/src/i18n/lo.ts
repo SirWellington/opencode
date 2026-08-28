@@ -919,6 +919,7 @@ export const dict = {
   "settings.general.section.display": "ຈໍສະແດງຜົນ",
   "settings.general.row.language.title": "ພາສາ",
   "settings.general.row.language.description": "ປ່ຽນພາສາສະແດງສໍາລັບ OpenCode",
+  "settings.permissions.autoaccept.global.title": "ຍອມຮັບການອະນຸຍາດອັດຕະໂນມັດສຳລັບເຊດຊັນທັງໝົດ",
   "settings.general.row.shell.title": "Shell ຂອງເທີມິນອນ",
   "settings.general.row.shell.description": "Shell ທີ່ໃຊ້ໂດຍເຄື່ອງໃຊ້ປາຍທາງ ແລະຕົວແທນ",
   "settings.general.row.shell.autoDefault": "ອັດຕະໂນມັດ (ຄ່າເລີ່ມຕົ້ນ)",

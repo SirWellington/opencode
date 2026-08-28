@@ -326,6 +326,15 @@ export const SettingsGeneral: Component = () => {
         </SettingsRow>
 
         <SettingsRow
+          title={language.t("settings.permissions.autoaccept.global.title")}
+          description={language.t("toast.permissions.autoaccept.on.description")}
+        >
+          <div data-action="settings-auto-accept-permissions-global">
+            <Switch checked={settings.permissions.autoApprove()} onChange={(checked) => settings.permissions.setAutoApprove(checked)} />
+          </div>
+        </SettingsRow>
+
+        <SettingsRow
           title={language.t("settings.general.row.shell.title")}
           description={language.t("settings.general.row.shell.description")}
         >

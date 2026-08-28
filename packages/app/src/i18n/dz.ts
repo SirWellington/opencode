@@ -940,6 +940,7 @@ export const dict: Record<string, string> = {
   "settings.general.section.display": "གསལ༌སྟོན",
   "settings.general.row.language.title": "སྐད༌ཡིག",
   "settings.general.row.language.description": "OpenCodeགི་དོན་ལུ་ བཀྲམ་སྟོན་སྐད་ཡིག་བསྒྱུར་བཅོས་འབད།",
+  "settings.permissions.autoaccept.global.title": "ལཱ་ཡུན་ཚང་མ་ལུ་ རང་བཞིན་ངོས་ལེན་གནང་བ་ཚུ།",
   "settings.general.row.shell.title": "ཊར་མི་ནཱལ་ Shell",
   "settings.general.row.shell.description": "ཊར་མི་ནཱལ་དང་ལས་ཚབ་ལག་ཆས་ཚུ་གིས་ལག་ལེན་འཐབ་མི་ Shell",
   "settings.general.row.shell.autoDefault": "རང་བཞིན་ (སྔོན་སྒྲིག)",

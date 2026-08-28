@@ -931,6 +931,7 @@ export const dict = {
   "settings.general.section.display": "ڈسپلے",
   "settings.general.row.language.title": "بولی",
   "settings.general.row.language.description": "OpenCode لئی ڈسپلے دی بولی بدلو",
+  "settings.permissions.autoaccept.global.title": "تمام سیشناں لئی اجازتاں خودکار قبول کرو",
   "settings.general.row.shell.title": "شیل",
   "settings.general.row.shell.description": "Shell ٹرمینل تے ایجنٹ ٹولز دے ذریعہ استعمال کیتا جاندا اے",
   "settings.general.row.shell.autoDefault": "آٹو (پہلے توں طے شدہ)",

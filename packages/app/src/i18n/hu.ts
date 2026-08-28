@@ -933,6 +933,7 @@ export const dict = {
   "settings.general.section.display": "Kijelző",
   "settings.general.row.language.title": "Nyelv",
   "settings.general.row.language.description": "Módosítsa a OpenCode kijelző nyelvét",
+  "settings.permissions.autoaccept.global.title": "Engedélyek automatikus elfogadása minden munkamenetben",
   "settings.general.row.shell.title": "Terminál shellje",
   "settings.general.row.shell.description": "A terminál és az ügynökeszközök által használt shell",
   "settings.general.row.shell.autoDefault": "Automatikus (alapértelmezett)",

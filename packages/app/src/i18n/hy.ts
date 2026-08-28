@@ -932,6 +932,7 @@ export const dict = {
   "settings.general.section.display": "Ցուցադրել",
   "settings.general.row.language.title": "Լեզու",
   "settings.general.row.language.description": "Փոխել ցուցադրման լեզուն OpenCode",
+  "settings.permissions.autoaccept.global.title": "Ավտոմատ ընդունել թույլտվությունները բոլոր նիստերի համար",
   "settings.general.row.shell.title": "Տերմինալի Shell",
   "settings.general.row.shell.description": "Shell-ն օգտագործվում է տերմինալի և գործակալի գործիքների կողմից",
   "settings.general.row.shell.autoDefault": "Ավտոմատ (կանխադրված)",

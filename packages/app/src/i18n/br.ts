@@ -847,6 +847,7 @@ export const dict = {
   "settings.general.section.display": "Tela",
   "settings.general.row.language.title": "Idioma",
   "settings.general.row.language.description": "Alterar o idioma de exibição do OpenCode",
+  "settings.permissions.autoaccept.global.title": "Aceitar permissões automaticamente para todas as sessões",
   "settings.general.row.shell.title": "Shell do terminal",
   "settings.general.row.shell.description":
     "Escolha o shell usado no terminal. Os shells compatíveis também são usados nas chamadas de ferramentas do agente.",

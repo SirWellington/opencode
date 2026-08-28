@@ -924,6 +924,7 @@ export const dict = {
   "settings.general.section.display": "ჩვენება",
   "settings.general.row.language.title": "ენა",
   "settings.general.row.language.description": "შეცვალეთ ჩვენების ენა OpenCode",
+  "settings.permissions.autoaccept.global.title": "ნებართვების ავტომატური მიღება ყველა სესიისთვის",
   "settings.general.row.shell.title": "ტერმინალის გარსი",
   "settings.general.row.shell.description": "Shell გამოიყენება ტერმინალის და აგენტის ხელსაწყოების მიერ",
   "settings.general.row.shell.autoDefault": "ავტომატური (ნაგულისხმევი)",

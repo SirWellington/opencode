@@ -930,6 +930,7 @@ export const dict = {
   "settings.general.section.display": "Visning",
   "settings.general.row.language.title": "Språk",
   "settings.general.row.language.description": "Ändra visningsspråket för OpenCode",
+  "settings.permissions.autoaccept.global.title": "Autoacceptera behörigheter för alla sessioner",
   "settings.general.row.shell.title": "Terminalskal",
   "settings.general.row.shell.description": "Skal som används av terminalen och agentverktygen",
   "settings.general.row.shell.autoDefault": "Auto (standard)",

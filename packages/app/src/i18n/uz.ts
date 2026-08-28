@@ -932,6 +932,7 @@ export const dict = {
   "settings.general.section.display": "Displey",
   "settings.general.row.language.title": "Til",
   "settings.general.row.language.description": "OpenCode uchun ekran tilini o'zgartiring",
+  "settings.permissions.autoaccept.global.title": "Barcha sessiyalar uchun ruxsatlarni avtomatik qabul qilish",
   "settings.general.row.shell.title": "Terminal qobig'i",
   "settings.general.row.shell.description": "Terminal va agent vositalari tomonidan ishlatiladigan qobiq",
   "settings.general.row.shell.autoDefault": "Avtomatik (standart)",

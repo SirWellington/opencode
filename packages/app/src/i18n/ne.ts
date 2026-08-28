@@ -924,6 +924,7 @@ export const dict: Record<string, string> = {
   "settings.general.section.display": "प्रदर्शन",
   "settings.general.row.language.title": "भाषा",
   "settings.general.row.language.description": "OpenCode को लागि प्रदर्शन भाषा परिवर्तन गर्नुहोस्",
+  "settings.permissions.autoaccept.global.title": "सबै सत्रका लागि अनुमतिहरू स्वत: स्वीकार गर्नुहोस्",
   "settings.general.row.shell.title": "टर्मिनल शेल",
   "settings.general.row.shell.description": "टर्मिनल र एजेन्ट उपकरणहरू द्वारा प्रयोग गरिएको शेल",
   "settings.general.row.shell.autoDefault": "स्वतः (पूर्वनिर्धारित)",

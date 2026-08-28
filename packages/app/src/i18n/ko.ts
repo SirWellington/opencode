@@ -592,6 +592,7 @@ export const dict = {
   "settings.general.section.display": "디스플레이",
   "settings.general.row.language.title": "언어",
   "settings.general.row.language.description": "OpenCode 표시 언어 변경",
+  "settings.permissions.autoaccept.global.title": "모든 세션에 대한 권한 자동 수락",
   "settings.general.row.appearance.title": "모양",
   "settings.general.row.appearance.description": "기기에서 OpenCode가 보이는 방식 사용자 지정",
   "settings.general.row.colorScheme.title": "색상 테마",

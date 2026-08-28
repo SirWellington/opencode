@@ -922,6 +922,7 @@ export const dict = {
   "settings.general.section.display": "نمایش",
   "settings.general.row.language.title": "زبان",
   "settings.general.row.language.description": "زبان نمایش را برای OpenCode تغییر دهید",
+  "settings.permissions.autoaccept.global.title": "پذیرش خودکار مجوزها برای همه جلسات",
   "settings.general.row.shell.title": "پوسته ترمینال",
   "settings.general.row.shell.description": "پوسته مورد استفاده ترمینال و ابزار عامل",
   "settings.general.row.shell.autoDefault": "خودکار (پیش‌فرض)",

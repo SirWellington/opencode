@@ -91,7 +91,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
         (dispose) => ({
           key,
           dispose,
-          state: createServerPermissionState({ sdk: ctx.sdk, sync: ctx.sync }),
+          state: createServerPermissionState({ sdk: ctx.sdk, sync: ctx.sync, autoApprove: () => settings.permissions.autoApprove() }),
         }),
         owner ?? undefined,
       )
@@ -142,6 +142,15 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       selected().enableConfiguredDirectory(directory)
     })
 
+    createEffect(() => {
+      if (!settings.permissions.autoApprove()) return
+      const directory = activeDirectory()
+      if (!directory) return
+      const state = selected()
+      if (!state.ready()) return
+      state.enableGlobal(directory)
+    })
+
     const permissionsEnabled = createMemo(() => {
       const directory = activeDirectory()
       if (!directory) return false
@@ -187,7 +196,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
 type PermissionState = ReturnType<typeof createServerPermissionState>
 type PermissionEvent = Parameters<Parameters<ServerSDK["event"]["listen"]>[0]>[0]
 
-function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync }) {
+function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync; autoApprove: () => boolean }) {
   const [store, setStore, _, ready] = persisted(
     {
       ...Persist.serverGlobal(input.sdk.scope, "permission", ["permission.v3"]),
@@ -296,7 +305,7 @@ function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync }
   }
 
   function shouldAutoRespond(permission: PermissionRequest, directory?: string) {
-    return autoRespondsPermission(store.autoAccept, sessions(directory), permission, directory)
+    return autoRespondsPermission(store.autoAccept, sessions(directory), permission, directory, input.autoApprove())
   }
 
   function isPending(permission: PermissionRequest) {
@@ -307,6 +316,7 @@ function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync }
   async function shouldAutoRespondResolved(permission: PermissionRequest, directory?: string) {
     const override = sessionAutoAccept(store.autoAccept, sessions(directory), permission, directory)
     if (override !== undefined) return override
+    if (input.autoApprove()) return true
     if (input.sync.session.lineage.peek(permission.sessionID)) return shouldAutoRespond(permission, directory)
     const lineage = await input.sync.session.lineage.resolve(permission.sessionID).catch(() => undefined)
     if (meta.disposed || !lineage) return false
@@ -367,6 +377,19 @@ function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync }
         if (!isAutoAcceptingDirectory(directory)) return
         for (const permission of permissions) {
           void respondPending(permission, directory, () => isAutoAcceptingDirectory(directory))
+        }
+      })
+      .catch(() => undefined)
+  }
+
+  function enableGlobal(directory: string) {
+    if (meta.disposed || !ready()) return
+    list(directory)
+      .then((permissions) => {
+        if (meta.disposed) return
+        if (!input.autoApprove()) return
+        for (const permission of permissions) {
+          void respondPending(permission, directory, () => input.autoApprove())
         }
       })
       .catch(() => undefined)
@@ -475,6 +498,7 @@ function createServerPermissionState(input: { sdk: ServerSDK; sync: ServerSync }
     api,
     sync: input.sync,
     enableConfiguredDirectory,
+    enableGlobal,
     permissionsEnabled(directory: string) {
       if (meta.disposed) return false
       const [childStore] = input.sync.child(directory)

@@ -933,6 +933,7 @@ export const dict = {
   "settings.general.section.display": "प्रदर्शन",
   "settings.general.row.language.title": "भाषा",
   "settings.general.row.language.description": "OpenCode के लिए प्रदर्शन भाषा बदलें",
+  "settings.permissions.autoaccept.global.title": "सभी सेशन के लिए अनुमतियाँ स्वतः स्वीकार करें",
   "settings.general.row.shell.title": "टर्मिनल शेल",
   "settings.general.row.shell.description": "शेल का उपयोग टर्मिनल और एजेंट टूल द्वारा किया जाता है",
   "settings.general.row.shell.autoDefault": "स्वतः (डिफ़ॉल्ट)",

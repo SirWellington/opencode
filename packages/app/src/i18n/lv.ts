@@ -930,6 +930,7 @@ export const dict = {
   "settings.general.section.display": "Displejs",
   "settings.general.row.language.title": "Valoda",
   "settings.general.row.language.description": "Mainīt OpenCode saskarnes valodu",
+  "settings.permissions.autoaccept.global.title": "Automātiski pieņemt atļaujas visām sesijām",
   "settings.general.row.shell.title": "Termināļa čaula",
   "settings.general.row.shell.description": "Čaula, ko izmanto terminālis un aģenta rīki",
   "settings.general.row.shell.autoDefault": "Automātiski (noklusējums)",

@@ -935,6 +935,7 @@ export const dict = {
   "settings.general.section.display": "Εμφάνιση",
   "settings.general.row.language.title": "Γλώσσα",
   "settings.general.row.language.description": "Αλλαγή της γλώσσας εμφάνισης για το OpenCode",
+  "settings.permissions.autoaccept.global.title": "Αυτόματη αποδοχή δικαιωμάτων για όλες τις συνεδρίες",
   "settings.general.row.shell.title": "Τερματικό κέλυφος",
   "settings.general.row.shell.description": "Κέλυφος που χρησιμοποιείται από το τερματικό και τα εργαλεία του πράκτορα",
   "settings.general.row.shell.autoDefault": "Αυτόματο (Προεπιλογή)",

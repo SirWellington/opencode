@@ -923,6 +923,7 @@ export const dict: Record<string, string> = {
   "settings.general.section.display": "প্রদর্শন",
   "settings.general.row.language.title": "ভাষা",
   "settings.general.row.language.description": "OpenCode-এর জন্য প্রদর্শনের ভাষা পরিবর্তন করুন",
+  "settings.permissions.autoaccept.global.title": "সব সেশনের জন্য স্বয়ংক্রিয়ভাবে অনুমতি গ্রহণ করুন",
   "settings.general.row.shell.title": "টার্মিনাল শেল",
   "settings.general.row.shell.description": "টার্মিনাল এবং এজেন্ট সরঞ্জাম দ্বারা ব্যবহৃত শেল",
   "settings.general.row.shell.autoDefault": "স্বয়ংক্রিয় (ডিফল্ট)",

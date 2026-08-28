@@ -921,6 +921,7 @@ export const dict = {
   "settings.general.section.display": "Ekraan",
   "settings.general.row.language.title": "Keel",
   "settings.general.row.language.description": "Muutke OpenCode kuvakeelt",
+  "settings.permissions.autoaccept.global.title": "Lubade automaatne aktsepteerimine kõikide seansside jaoks",
   "settings.general.row.shell.title": "Terminali shell",
   "settings.general.row.shell.description": "Terminali ja agenditööriistade kasutatav shell",
   "settings.general.row.shell.autoDefault": "Automaatne (vaikimisi)",

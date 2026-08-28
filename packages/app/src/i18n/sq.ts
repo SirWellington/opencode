@@ -928,6 +928,7 @@ export const dict = {
   "settings.general.section.display": "Ekrani",
   "settings.general.row.language.title": "Gjuha",
   "settings.general.row.language.description": "Ndryshoni gjuhën e ekranit për OpenCode",
+  "settings.permissions.autoaccept.global.title": "Prano automatikisht lejet për të gjitha sesionet",
   "settings.general.row.shell.title": "Predha e terminalit",
   "settings.general.row.shell.description": "Predha e përdorur nga terminali dhe mjetet e agjentit",
   "settings.general.row.shell.autoDefault": "Auto (e parazgjedhur)",

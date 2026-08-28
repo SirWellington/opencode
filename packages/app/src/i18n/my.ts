@@ -937,6 +937,7 @@ export const dict = {
   "settings.general.section.display": "မျက်နှာပြင်",
   "settings.general.row.language.title": "ဘာသာစကား",
   "settings.general.row.language.description": "OpenCode အတွက် ဖော်ပြသည့် ဘာသာစကားကို ပြောင်းပါ။",
+  "settings.permissions.autoaccept.global.title": "ဆက်ရှင်အားလုံးအတွက် ခွင့်ပြုချက်များကို အလိုအလျောက် လက်ခံသည်။",
   "settings.general.row.shell.title": "Terminal Shell",
   "settings.general.row.shell.description": "terminal နှင့် agent tools မှအသုံးပြုသော Shell",
   "settings.general.row.shell.autoDefault": "အလိုအလျောက် (ပုံသေ)",

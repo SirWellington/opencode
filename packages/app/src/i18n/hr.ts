@@ -933,6 +933,7 @@ export const dict = {
   "settings.general.section.display": "Prikaz",
   "settings.general.row.language.title": "Jezik",
   "settings.general.row.language.description": "Promijenite jezik prikaza za OpenCode",
+  "settings.permissions.autoaccept.global.title": "Automatsko prihvaćanje dopuštenja za sve sesije",
   "settings.general.row.shell.title": "Terminal školjka",
   "settings.general.row.shell.description": "Ljuska koju koriste alati terminala i agenta",
   "settings.general.row.shell.autoDefault": "Automatski (zadano)",

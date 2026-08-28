@@ -927,6 +927,7 @@ export const dict = {
   "settings.general.section.display": "Skjár",
   "settings.general.row.language.title": "Tungumál",
   "settings.general.row.language.description": "Breyttu skjátungumálinu fyrir OpenCode",
+  "settings.permissions.autoaccept.global.title": "Samþykkja sjálfkrafa heimildir fyrir allar setur",
   "settings.general.row.shell.title": "Skel skjáhermis",
   "settings.general.row.shell.description": "Skelin sem skjáhermirinn og verkfæri fulltrúans nota",
   "settings.general.row.shell.autoDefault": "Sjálfvirkt (sjálfgefið)",

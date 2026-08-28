@@ -331,6 +331,18 @@ export const SettingsGeneralV2: Component<{
 
         <PermissionScopeSetting controller={permissionScope} />
 
+        <SettingsRowV2
+          title={language.t("settings.permissions.autoaccept.global.title")}
+          description={language.t("toast.permissions.autoaccept.on.description")}
+        >
+          <div data-action="settings-auto-accept-permissions-global">
+            <Switch
+              checked={settings.permissions.autoApprove()}
+              onChange={(checked) => settings.permissions.setAutoApprove(checked)}
+            />
+          </div>
+        </SettingsRowV2>
+
         <ShellSetting controller={shell} />
 
         <SettingsRowV2

@@ -845,6 +845,7 @@ export const dict = {
   "settings.general.section.display": "Visualizzazione",
   "settings.general.row.language.title": "Lingua",
   "settings.general.row.language.description": "Cambia la lingua di visualizzazione per OpenCode",
+  "settings.permissions.autoaccept.global.title": "Accetta automaticamente le autorizzazioni per tutte le sessioni",
   "settings.general.row.shell.title": "Shell del terminale",
   "settings.general.row.shell.description": "Shell utilizzata dal terminale e dagli strumenti dell'agente",
   "settings.general.row.shell.autoDefault": "Automatico (predefinito)",

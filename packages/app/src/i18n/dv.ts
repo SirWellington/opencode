@@ -939,6 +939,7 @@ export const dict = {
   "settings.general.section.display": "ޑިސްޕްލޭ",
   "settings.general.row.language.title": "ބަސް",
   "settings.general.row.language.description": "OpenCode އަށް ޑިސްޕްލޭ ލޭންގުއޭޖް ބަދަލުކުރުން",
+  "settings.permissions.autoaccept.global.title": "އޮޓޯ އެކްސެޕްޓް ހުއްދަތައް ހުރިހާ ސެޝަންތަކަށް",
   "settings.general.row.shell.title": "ޓާމިނަލް ޝެލް އެވެ",
   "settings.general.row.shell.description": "ޓާމިނަލް އާއި އޭޖެންޓް ޓޫލްސް އިން ބޭނުންކުރާ ޝެލް",
   "settings.general.row.shell.autoDefault": "އޮޓޯ (ޑިފޯލްޓް)",

@@ -891,6 +891,7 @@ export const dict = {
 
   "settings.general.row.language.title": "語言",
   "settings.general.row.language.description": "變更 OpenCode 的顯示語言",
+  "settings.permissions.autoaccept.global.title": "自動接受所有工作階段的權限",
   "settings.general.row.shell.title": "終端機 Shell",
   "settings.general.row.shell.description": "選擇終端機使用的 Shell。相容的 Shell 也會用於代理程式工具呼叫。",
   "settings.general.row.shell.autoDefault": "自動（預設）",

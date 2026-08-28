@@ -929,6 +929,7 @@ export const dict = {
   "settings.general.section.display": "Afișare",
   "settings.general.row.language.title": "Limbă",
   "settings.general.row.language.description": "Schimbă limba de afișare pentru OpenCode",
+  "settings.permissions.autoaccept.global.title": "Acceptă automat permisiunile pentru toate sesiunile",
   "settings.general.row.shell.title": "Shell terminal",
   "settings.general.row.shell.description": "Shell folosit de terminal și instrumentele agentului",
   "settings.general.row.shell.autoDefault": "Auto (implicit)",

@@ -928,6 +928,7 @@ export const dict = {
   "settings.general.section.display": "Приказ",
   "settings.general.row.language.title": "Језик",
   "settings.general.row.language.description": "Промените језик приказа за OpenCode",
+  "settings.permissions.autoaccept.global.title": "Аутоматско прихватање дозвола за све сесије",
   "settings.general.row.shell.title": "Терминал shell",
   "settings.general.row.shell.description": "Shell који користе алати терминала и агента",
   "settings.general.row.shell.autoDefault": "аутоматски (подразумевано)",

@@ -924,6 +924,7 @@ export const dict = {
   "settings.general.section.display": "Paparan",
   "settings.general.row.language.title": "Bahasa",
   "settings.general.row.language.description": "Tukar bahasa paparan untuk OpenCode",
+  "settings.permissions.autoaccept.global.title": "Terima kebenaran secara automatik untuk semua sesi",
   "settings.general.row.shell.title": "Shell terminal",
   "settings.general.row.shell.description": "Shell yang digunakan oleh terminal dan alat ejen",
   "settings.general.row.shell.autoDefault": "Auto (Lalai)",

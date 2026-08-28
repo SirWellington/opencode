@@ -844,6 +844,7 @@ export const dict = {
   "settings.general.section.display": "العرض",
   "settings.general.row.language.title": "اللغة",
   "settings.general.row.language.description": "تغيير لغة العرض لـ OpenCode",
+  "settings.permissions.autoaccept.global.title": "قبول الأذونات تلقائيًا لجميع الجلسات",
   "settings.general.row.shell.title": "Shell المحطة الطرفية",
   "settings.general.row.shell.description":
     "اختر shell المستخدم في المحطة الطرفية. تُستخدم واجهات shell المتوافقة أيضًا في استدعاءات أدوات الوكيل.",

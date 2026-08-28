@@ -824,6 +824,7 @@ export const dict = {
   "settings.general.section.display": "Näyttö",
   "settings.general.row.language.title": "Kieli",
   "settings.general.row.language.description": "Vaihda OpenCoden näyttökieli",
+  "settings.permissions.autoaccept.global.title": "Hyväksy käyttöoikeudet automaattisesti kaikille istuntoille",
   "settings.general.row.shell.title": "Terminaalin komentotulkki",
   "settings.general.row.shell.description": "Terminaalin ja agenttityökalujen käyttämä komentotulkki",
   "settings.general.row.shell.autoDefault": "Automaattinen (oletus)",

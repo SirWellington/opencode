@@ -936,6 +936,7 @@ export const dict = {
   "settings.general.section.display": "Hiển thị",
   "settings.general.row.language.title": "Ngôn ngữ",
   "settings.general.row.language.description": "Thay đổi ngôn ngữ hiển thị cho OpenCode",
+  "settings.permissions.autoaccept.global.title": "Tự động chấp nhận quyền cho tất cả phiên",
   "settings.general.row.shell.title": "Shell terminal",
   "settings.general.row.shell.description": "Shell được terminal và các công cụ của tác nhân sử dụng",
   "settings.general.row.shell.autoDefault": "Tự động (Mặc định)",

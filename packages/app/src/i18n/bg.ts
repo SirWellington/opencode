@@ -931,6 +931,7 @@ export const dict = {
   "settings.general.section.display": "Дисплей",
   "settings.general.row.language.title": "език",
   "settings.general.row.language.description": "Променете езика на дисплея за OpenCode",
+  "settings.permissions.autoaccept.global.title": "Автоматично приемане на разрешения за всички сесии",
   "settings.general.row.shell.title": "Терминал shell",
   "settings.general.row.shell.description": "Shell използвани от инструментите на терминала и агента",
   "settings.general.row.shell.autoDefault": "Автоматично (по подразбиране)",

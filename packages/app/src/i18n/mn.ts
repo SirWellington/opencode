@@ -932,6 +932,7 @@ export const dict = {
   "settings.general.section.display": "Дэлгэц",
   "settings.general.row.language.title": "Хэл",
   "settings.general.row.language.description": "OpenCode дэлгэцийн хэлийг өөрчлөх",
+  "settings.permissions.autoaccept.global.title": "Бүх сессийн зөвшөөрлийг автоматаар хүлээн авах",
   "settings.general.row.shell.title": "Терминал shell",
   "settings.general.row.shell.description": "Shell нь терминал болон агентын хэрэгслүүдэд ашиглагддаг",
   "settings.general.row.shell.autoDefault": "Автомат (Өгөгдмөл)",

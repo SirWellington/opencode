@@ -934,6 +934,7 @@ export const dict = {
   "settings.general.section.display": "Weergave",
   "settings.general.row.language.title": "Taal",
   "settings.general.row.language.description": "Wijzig de weergavetaal voor OpenCode",
+  "settings.permissions.autoaccept.global.title": "Machtigingen automatisch accepteren voor alle sessies",
   "settings.general.row.shell.title": "Terminalshell",
   "settings.general.row.shell.description": "Shell gebruikt door de terminal- en agenttools",
   "settings.general.row.shell.autoDefault": "Automatisch (standaard)",

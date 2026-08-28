@@ -42,10 +42,15 @@ export function autoRespondsPermission(
   session: { id: string; parentID?: string }[],
   permission: { sessionID: string },
   directory?: string,
+  fallback = false,
 ) {
   const value = sessionAutoAccept(autoAccept, session, permission, directory)
   if (value !== undefined) return value
-  return directory ? isDirectoryAutoAccepting(autoAccept, directory) : false
+  if (directory) {
+    const directoryValue = autoAccept[directoryAcceptKey(directory)]
+    if (directoryValue !== undefined) return directoryValue
+  }
+  return fallback
 }
 
 export function sessionAutoAccept(

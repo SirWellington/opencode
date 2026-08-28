@@ -934,6 +934,7 @@ export const dict = {
   "settings.general.section.display": "ڈسپلے",
   "settings.general.row.language.title": "زبان",
   "settings.general.row.language.description": "OpenCode کے لیے ڈسپلے کی زبان تبدیل کریں۔",
+  "settings.permissions.autoaccept.global.title": "تمام سیشنز کے لیے اجازتیں خود بخود قبول کریں۔",
   "settings.general.row.shell.title": "ٹرمینل شیل",
   "settings.general.row.shell.description": "ٹرمینل اور ایجنٹ ٹولز کے ذریعے استعمال ہونے والا شیل",
   "settings.general.row.shell.autoDefault": "خودکار (پہلے سے طے شدہ)",
