@@ -72,6 +72,42 @@ describe("Truncate", () => {
       }),
     )
 
+    it.live("keeps a byte-bounded preview when a single line exceeds maxBytes", () =>
+      Effect.gen(function* () {
+        const svc = yield* Truncate.Service
+        const content = "a".repeat(1000)
+        const result = yield* svc.output(content, { maxBytes: 100 })
+
+        expect(result.truncated).toBe(true)
+        expect(result.content).toContain("a".repeat(100))
+        expect(result.content).toContain("...900 bytes truncated...")
+      }),
+    )
+
+    it.live("keeps a byte-bounded tail preview when a single line exceeds maxBytes", () =>
+      Effect.gen(function* () {
+        const svc = yield* Truncate.Service
+        const content = "a".repeat(900) + "END"
+        const result = yield* svc.output(content, { maxBytes: 100, direction: "tail" })
+
+        expect(result.truncated).toBe(true)
+        expect(result.content).toContain("END")
+        expect(result.content).toContain("...803 bytes truncated...")
+      }),
+    )
+
+    it.live("byte preview respects multibyte characters", () =>
+      Effect.gen(function* () {
+        const svc = yield* Truncate.Service
+        const content = "é".repeat(1000)
+        const result = yield* svc.output(content, { maxBytes: 100 })
+
+        expect(result.truncated).toBe(true)
+        expect(result.content).toContain("é".repeat(50))
+        expect(result.content).toContain("...1900 bytes truncated...")
+      }),
+    )
+
     it.live("truncates from head by default", () =>
       Effect.gen(function* () {
         const svc = yield* Truncate.Service

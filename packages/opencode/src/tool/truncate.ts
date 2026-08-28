@@ -29,6 +29,35 @@ function hasTaskTool(agent?: Agent.Info) {
   return evaluate("task", "*", agent.permission).action !== "deny"
 }
 
+function takePrefix(text: string, maxBytes: number): string {
+  let bytes = 0
+  let index = 0
+  while (index < text.length) {
+    const size = Buffer.byteLength(text[index], "utf8")
+    if (bytes + size > maxBytes) break
+    bytes += size
+    index++
+  }
+  return text.slice(0, index)
+}
+
+function takeSuffix(text: string, maxBytes: number): string {
+  const chars = Array.from(text)
+  let bytes = 0
+  let index = chars.length
+  while (index > 0) {
+    const size = Buffer.byteLength(chars[index - 1], "utf8")
+    if (bytes + size > maxBytes) break
+    bytes += size
+    index--
+  }
+  return chars.slice(index).join("")
+}
+
+function takeSlice(text: string, maxBytes: number, direction: "head" | "tail"): string {
+  return direction === "head" ? takePrefix(text, maxBytes) : takeSuffix(text, maxBytes)
+}
+
 export interface Interface {
   readonly cleanup: () => Effect.Effect<void>
   readonly write: (text: string) => Effect.Effect<string>
@@ -121,9 +150,13 @@ const layer = Layer.effect(
         }
       }
 
-      const removed = hitBytes ? totalBytes - bytes : lines.length - out.length
+      // A line-based preview is empty when the first (or last) line alone exceeds
+      // maxBytes (e.g. single-line JSON), so fall back to a byte-bounded slice.
+      const fallback = out.length === 0
+      const preview = fallback ? takeSlice(text, maxBytes, direction) : out.join("\n")
+      const shown = fallback ? Buffer.byteLength(preview, "utf8") : bytes
+      const removed = hitBytes ? totalBytes - shown : lines.length - out.length
       const unit = hitBytes ? "bytes" : "lines"
-      const preview = out.join("\n")
       const file = yield* write(text)
 
       const hint = hasTaskTool(agent)
