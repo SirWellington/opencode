@@ -83,7 +83,13 @@ export function serveUIEffect(
     const embeddedWebUI = yield* Effect.promise(() => embeddedUI(services.disableEmbeddedWebUi))
     const path = new URL(request.url, "http://localhost").pathname
 
-    if (embeddedWebUI) return yield* serveEmbeddedUIEffect(path, services.fs, embeddedWebUI)
+    if (embeddedWebUI) {
+      const response = yield* serveEmbeddedUIEffect(path, services.fs, embeddedWebUI)
+      if (response.status !== 404) return response
+      // The map exists but the file is missing (e.g. a packaged app without the
+      // app dist next to the bundle); fall through to the upstream proxy
+      // instead of surfacing a 404.
+    }
 
     const response = yield* services.client.execute(
       HttpClientRequest.make(request.method)(upstreamURL(path), {

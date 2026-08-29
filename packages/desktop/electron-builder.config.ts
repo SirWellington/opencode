@@ -55,7 +55,9 @@ const getBase = (appId: string): Configuration => ({
   extraMetadata: {
     desktopName: `${appId}.desktop`,
   },
-  files: ["out/**/*", "resources/**/*", "!resources/opencode-cli*"],
+  // The sidecar's embedded-UI map resolves the web app at <app root>/app/dist
+  // relative to its chunk (out/main/chunks), so package the built app there.
+  files: ["out/**/*", "resources/**/*", "!resources/opencode-cli*", { from: "../app/dist", to: "app/dist" }],
   extraResources: [
     ...(channel === "dev"
       ? [
