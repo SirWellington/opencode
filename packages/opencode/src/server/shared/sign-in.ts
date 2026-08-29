@@ -101,6 +101,7 @@ function signInPage(next: string, error: string | undefined) {
 `,
     {
       status: error ? 401 : 200,
+      contentType: "text/html; charset=utf-8",
       headers: {
         "content-security-policy":
           "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",

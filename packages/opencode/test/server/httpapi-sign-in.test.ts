@@ -67,6 +67,7 @@ describe("sign-in page", () => {
       const body = yield* responseText(response)
 
       expect(response.status).toBe(200)
+      expect(response.headers.get("content-type")).toContain("text/html")
       expect(body).toContain("<form method=\"post\" action=\"/sign-in\">")
       expect(body).toContain("name=\"username\"")
       expect(body).toContain("autocomplete=\"username\"")
