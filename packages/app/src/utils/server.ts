@@ -18,6 +18,37 @@ export function authFromToken(token: string | null) {
   }
 }
 
+function isSameOrigin(url: string) {
+  if (typeof window === "undefined") return false
+  try {
+    return new URL(url).origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
+// When the server rejects an API call because the browser session is missing or
+// expired, send the user to the server's sign-in page instead of surfacing an
+// opaque 401. Only applies when the app is served from the same origin as the
+// server it is talking to.
+export function withSignInRedirect(
+  server: ServerConnection.HttpBase,
+  fetcher: typeof globalThis.fetch,
+): typeof globalThis.fetch {
+  const wrapped = (
+    input: Parameters<typeof globalThis.fetch>[0],
+    init?: Parameters<typeof globalThis.fetch>[1],
+  ) =>
+    fetcher(input, init).then((response) => {
+      if (response.status !== 401 || !isSameOrigin(server.url)) return response
+      const next = window.location.pathname
+      window.location.assign(next === "/" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(next)}`)
+      return response
+    })
+  // Fetch implementations may carry statics (e.g. Bun's `preconnect`); forward them.
+  return Object.assign(wrapped, fetcher)
+}
+
 export function createSdkForServer({
   server,
   ...config
@@ -33,6 +64,7 @@ export function createSdkForServer({
 
   return createOpencodeClient({
     ...config,
+    fetch: withSignInRedirect(server, config.fetch ?? globalThis.fetch),
     headers: {
       ...(config.headers instanceof Headers ? Object.fromEntries(config.headers.entries()) : config.headers),
       ...auth,
@@ -47,7 +79,7 @@ export function createApiForServer(input: {
 }): OpenCodeClient {
   return OpenCode.make({
     baseUrl: input.server.url,
-    fetch: input.fetch,
+    fetch: withSignInRedirect(input.server, input.fetch ?? globalThis.fetch),
     headers: input.server.password
       ? {
           Authorization: `Basic ${authTokenFromCredentials({

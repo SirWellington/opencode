@@ -1,4 +1,5 @@
 import { NodeHttpServer } from "@effect/platform-node"
+import { ServerSession } from "@opencode-ai/server/auth/session"
 import { describe, expect } from "bun:test"
 import { Effect, Layer, Option, Schema } from "effect"
 import { HttpClient, HttpClientRequest, HttpRouter } from "effect/unstable/http"
@@ -97,10 +98,25 @@ describe("HttpApi authorization middleware", () => {
       )
 
       expect(missing.status).toBe(401)
-      expect(missing.headers["www-authenticate"] ?? "").toContain("Basic")
+      expect(missing.headers["www-authenticate"]).toBeUndefined()
       expect(badPassword.status).toBe(401)
-      expect(badPassword.headers["www-authenticate"] ?? "").toContain("Basic")
+      expect(badPassword.headers["www-authenticate"]).toBeUndefined()
       expect(good.status).toBe(200)
+    }),
+  )
+
+  itSecret.live("accepts signed-in session cookies", () =>
+    Effect.gen(function* () {
+      const [valid, invalid] = yield* Effect.all(
+        [
+          getProbe({ cookie: `opencode_session=${ServerSession.issue(true)}` }),
+          getProbe({ cookie: "opencode_session=not-a-session" }),
+        ],
+        { concurrency: "unbounded" },
+      )
+
+      expect(valid.status).toBe(200)
+      expect(invalid.status).toBe(401)
     }),
   )
 
@@ -169,6 +185,19 @@ describe("HttpApi authorization middleware", () => {
       expect(response.status).toBe(401)
       expect(response.headers["www-authenticate"] ?? "").toContain("Basic")
       expect(body).toEqual({ _tag: "UnauthorizedError", message: "Authentication required" })
+    }),
+  )
+
+  itV2Secret.live("accepts signed-in session cookies", () =>
+    Effect.gen(function* () {
+      const response = yield* HttpClientRequest.get("/api/probe").pipe(
+        HttpClientRequest.setHeader("cookie", `opencode_session=${ServerSession.issue(true)}`),
+        HttpClient.execute,
+      )
+      const body = yield* response.json
+
+      expect(response.status).toBe(200)
+      expect(body).toBe("ok")
     }),
   )
 })

@@ -393,7 +393,7 @@ Start a headless OpenCode server for API access. Check out the [server docs](/do
 opencode serve
 ```
 
-This starts an HTTP server that provides API access to opencode functionality without the TUI interface. Set `OPENCODE_SERVER_PASSWORD` to enable HTTP basic auth (username defaults to `opencode`).
+This starts an HTTP server that provides API access to opencode functionality without the TUI interface. Set `OPENCODE_SERVER_PASSWORD` to enable HTTP basic auth (username defaults to `opencode`). Browsers are shown a sign-in page instead of the native password prompt.
 
 #### Flags
 
@@ -506,7 +506,7 @@ Start a headless OpenCode server with a web interface.
 opencode web
 ```
 
-This starts an HTTP server and opens a web browser to access OpenCode through a web interface. Set `OPENCODE_SERVER_PASSWORD` to enable HTTP basic auth (username defaults to `opencode`).
+This starts an HTTP server and opens a web browser to access OpenCode through a web interface. Set `OPENCODE_SERVER_PASSWORD` to enable HTTP basic auth (username defaults to `opencode`). You'll be asked to sign in, with a "Remember me" option to keep the session for 30 days.
 
 #### Flags
 

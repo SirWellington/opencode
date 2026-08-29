@@ -1,6 +1,7 @@
+import { ServerSession } from "@opencode-ai/server/auth/session"
 import { ServerAuth } from "@/server/auth"
 import { Effect, Encoding, Layer, Redacted } from "effect"
-import { HttpEffect, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
+import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi"
 import { hasPtyConnectTicketURL } from "@/server/shared/pty-ticket"
 import { isPublicUIPath } from "@/server/shared/public-ui"
@@ -11,7 +12,20 @@ export {
 
 const AUTH_TOKEN_QUERY = "auth_token"
 const UNAUTHORIZED = 401
-const WWW_AUTHENTICATE = 'Basic realm="Secure Area"'
+
+function sessionAuthorized(request: HttpServerRequest.HttpServerRequest) {
+  const token = ServerSession.tokenFromCookies(request.cookies)
+  return token !== undefined && ServerSession.isValid(token)
+}
+
+function isBrowserDocument(request: HttpServerRequest.HttpServerRequest) {
+  return request.method === "GET" && (request.headers.accept ?? "").includes("text/html")
+}
+
+function redirectToSignIn(request: HttpServerRequest.HttpServerRequest) {
+  const pathname = new URL(request.url, "http://localhost").pathname
+  return HttpServerResponse.redirect(pathname === "/" ? "/sign-in" : `/sign-in?next=${encodeURIComponent(pathname)}`)
+}
 
 // Avoid HttpApiSecurity alternatives here: Effect security middleware wraps the
 // full handler, so a downstream failure can make the next auth alternative run
@@ -39,18 +53,14 @@ function emptyCredential() {
 
 function validateCredential<A, E, R>(
   effect: Effect.Effect<A, E, R>,
+  request: HttpServerRequest.HttpServerRequest,
   credential: ServerAuth.DecodedCredentials,
   config: ServerAuth.Info,
 ) {
   return Effect.gen(function* () {
     if (!ServerAuth.required(config)) return yield* effect
-    if (!ServerAuth.authorized(credential, config)) {
-      yield* HttpEffect.appendPreResponseHandler((_request, response) =>
-        Effect.succeed(HttpServerResponse.setHeader(response, "www-authenticate", WWW_AUTHENTICATE)),
-      )
-      return yield* new HttpApiError.Unauthorized({})
-    }
-    return yield* effect
+    if (ServerAuth.authorized(credential, config) || sessionAuthorized(request)) return yield* effect
+    return yield* new HttpApiError.Unauthorized({})
   })
 }
 
@@ -84,18 +94,14 @@ function credentialFromURL(url: URL, request: HttpServerRequest.HttpServerReques
 
 function validateRawCredential<A, E, R>(
   effect: Effect.Effect<A, E, R>,
+  request: HttpServerRequest.HttpServerRequest,
   credential: ServerAuth.DecodedCredentials,
   config: ServerAuth.Info,
 ) {
   if (!ServerAuth.required(config)) return effect
-  if (!ServerAuth.authorized(credential, config))
-    return Effect.succeed(
-      HttpServerResponse.empty({
-        status: UNAUTHORIZED,
-        headers: { "www-authenticate": WWW_AUTHENTICATE },
-      }),
-    )
-  return effect
+  if (ServerAuth.authorized(credential, config) || sessionAuthorized(request)) return effect
+  if (isBrowserDocument(request)) return Effect.succeed(redirectToSignIn(request))
+  return Effect.succeed(HttpServerResponse.empty({ status: UNAUTHORIZED }))
 }
 
 export const authorizationRouterMiddleware = HttpRouter.middleware()(
@@ -109,7 +115,7 @@ export const authorizationRouterMiddleware = HttpRouter.middleware()(
         const url = new URL(request.url, "http://localhost")
         if (isPublicUIPath(request.method, url.pathname)) return yield* effect
         return yield* credentialFromURL(url, request).pipe(
-          Effect.flatMap((credential) => validateRawCredential(effect, credential, config)),
+          Effect.flatMap((credential) => validateRawCredential(effect, request, credential, config)),
         )
       })
   }),
@@ -124,7 +130,7 @@ export const authorizationLayer = Layer.effect(
       Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest
         return yield* credentialFromRequest(request).pipe(
-          Effect.flatMap((credential) => validateCredential(effect, credential, config)),
+          Effect.flatMap((credential) => validateCredential(effect, request, credential, config)),
         )
       }),
     )
@@ -142,7 +148,7 @@ export const ptyConnectAuthorizationLayer = Layer.effect(
         const url = new URL(request.url, "http://localhost")
         if (hasPtyConnectTicketURL(url)) return yield* effect
         return yield* credentialFromURL(url, request).pipe(
-          Effect.flatMap((credential) => validateCredential(effect, credential, config)),
+          Effect.flatMap((credential) => validateCredential(effect, request, credential, config)),
         )
       }),
     )

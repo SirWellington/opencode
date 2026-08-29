@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { describe, expect } from "bun:test"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { ConfigProvider, Effect, Layer, Option } from "effect"
+import { ServerSession } from "@opencode-ai/server/auth/session"
 import { AppNodeBuilder } from "@opencode-ai/core/effect/app-node-builder"
 import {
   HttpClient,
@@ -375,7 +376,35 @@ describe("HttpApi UI fallback", () => {
       }).request("/")
 
       expect(response.status).toBe(401)
-      expect(response.headers.get("www-authenticate")).toBe('Basic realm="Secure Area"')
+      expect(response.headers.get("www-authenticate")).toBeNull()
+    }),
+  )
+
+  it.live("redirects browser document requests to the sign-in page", () =>
+    Effect.gen(function* () {
+      const response = yield* uiApp({
+        password: "secret",
+        username: "opencode",
+        disableEmbeddedWebUi: true,
+      }).request("/", { headers: { accept: "text/html" } })
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/sign-in")
+    }),
+  )
+
+  it.live("accepts a signed-in session cookie for the web UI", () =>
+    Effect.gen(function* () {
+      const token = ServerSession.issue(true)
+      const response = yield* uiApp({
+        password: "secret",
+        username: "opencode",
+        disableEmbeddedWebUi: true,
+        client: httpClient(new Response("<html>opencode</html>", { headers: { "content-type": "text/html" } })),
+      }).request("/", { headers: { accept: "text/html", cookie: `opencode_session=${token}` } })
+
+      expect(response.status).toBe(200)
+      expect(yield* responseText(response)).toBe("<html>opencode</html>")
     }),
   )
 

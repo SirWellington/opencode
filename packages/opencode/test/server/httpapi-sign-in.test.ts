@@ -1,0 +1,280 @@
+import { describe, expect } from "bun:test"
+import { ServerSession } from "@opencode-ai/server/auth/session"
+import * as TestClock from "effect/testing/TestClock"
+import { Clock, Context, Effect, Layer, Option } from "effect"
+import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
+import { ServerAuth } from "../../src/server/auth"
+import { authorizationRouterMiddleware } from "../../src/server/routes/instance/httpapi/middleware/authorization"
+import { resetRateLimit, signInRoute } from "../../src/server/shared/sign-in"
+import { testEffect } from "../lib/effect"
+
+function authConfigLayer(input?: { password?: string; username?: string }) {
+  return ServerAuth.Config.configLayer({
+    password: input?.password === undefined ? Option.none() : Option.some(input.password),
+    username: input?.username ?? "opencode",
+  })
+}
+
+const pageRoute = HttpRouter.use((router) =>
+  Effect.gen(function* () {
+    yield* router.add("GET", "/", HttpServerResponse.text("home", { headers: { "content-type": "text/html" } }))
+    yield* router.add("GET", "/some/page", HttpServerResponse.text("page", { headers: { "content-type": "text/html" } }))
+  }),
+).pipe(Layer.provide(authorizationRouterMiddleware.layer))
+
+// Stands in for the production app: a protected HTML page wired with the same
+// router middleware the UI fallback uses, plus the real sign-in routes.
+function app(
+  input?: { password?: string; username?: string },
+  context: Context.Context<unknown> = Context.empty() as Context.Context<unknown>,
+) {
+  const handler = HttpRouter.toWebHandler(
+    Layer.mergeAll(pageRoute, signInRoute).pipe(
+      Layer.provide(authConfigLayer(input)),
+      Layer.provide(HttpServer.layerServices),
+    ),
+    { disableLogger: true },
+  ).handler
+  return {
+    request(input: string | URL | Request, init?: RequestInit) {
+      return Effect.promise(() =>
+        Promise.resolve(
+          handler(
+            input instanceof Request ? input : new Request(new URL(input, "http://localhost"), init),
+            context,
+          ),
+        ),
+      )
+    },
+  }
+}
+
+const responseText = (response: Response) => Effect.promise(() => response.text())
+
+const formPost = (body: string, headers?: Record<string, string>, context?: Context.Context<unknown>) =>
+  app({ password: "secret" }, context).request("/sign-in", {
+    method: "POST",
+    body,
+    headers: { "content-type": "application/x-www-form-urlencoded", ...headers },
+  })
+
+const it = testEffect(Layer.empty)
+
+describe("sign-in page", () => {
+  it.live("serves the sign-in form for browsers", () =>
+    Effect.gen(function* () {
+      const response = yield* app({ password: "secret" }).request("/sign-in")
+      const body = yield* responseText(response)
+
+      expect(response.status).toBe(200)
+      expect(body).toContain("<form method=\"post\" action=\"/sign-in\">")
+      expect(body).toContain("name=\"username\"")
+      expect(body).toContain("autocomplete=\"username\"")
+      expect(body).toContain("name=\"password\"")
+      expect(body).toContain("autocomplete=\"current-password\"")
+      expect(body).toContain("name=\"remember\"")
+      expect(response.headers.get("cache-control")).toBe("no-store")
+      expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'")
+    }),
+  )
+
+  it.live("redirects to home when no password is configured", () =>
+    Effect.gen(function* () {
+      const get = yield* app().request("/sign-in")
+      const post = yield* app().request("/sign-in", {
+        method: "POST",
+        body: "username=opencode&password=secret",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+      })
+
+      expect(get.status).toBe(302)
+      expect(get.headers.get("location")).toBe("/")
+      expect(post.status).toBe(302)
+      expect(post.headers.get("location")).toBe("/")
+    }),
+  )
+
+  it.live("redirects unauthenticated browser document requests to /sign-in", () =>
+    Effect.gen(function* () {
+      const response = yield* app({ password: "secret" }).request("/", { headers: { accept: "text/html" } })
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/sign-in")
+      expect(response.headers.get("www-authenticate")).toBeNull()
+    }),
+  )
+
+  it.live("carries the requested path through the redirect", () =>
+    Effect.gen(function* () {
+      const response = yield* app({ password: "secret" }).request("/some/page", { headers: { accept: "text/html" } })
+
+      expect(response.status).toBe(302)
+      expect(new URL(response.headers.get("location") ?? "", "http://localhost").searchParams.get("next")).toBe(
+        "/some/page",
+      )
+    }),
+  )
+
+  it.live("still answers non-browser requests with a plain 401", () =>
+    Effect.gen(function* () {
+      const response = yield* app({ password: "secret" }).request("/")
+
+      expect(response.status).toBe(401)
+      expect(response.headers.get("www-authenticate")).toBeNull()
+    }),
+  )
+
+  it.live("accepts basic auth and signed-in session cookies on protected pages", () =>
+    Effect.gen(function* () {
+      const token = ServerSession.issue(true)
+      const [basic, session] = yield* Effect.all(
+        [
+          app({ password: "secret" }).request("/", {
+            headers: { authorization: `Basic ${btoa("opencode:secret")}` },
+          }),
+          app({ password: "secret" }).request("/", {
+            headers: { accept: "text/html", cookie: `opencode_session=${token}` },
+          }),
+        ],
+        { concurrency: "unbounded" },
+      )
+
+      expect(basic.status).toBe(200)
+      expect(session.status).toBe(200)
+      expect(yield* responseText(session)).toBe("home")
+    }),
+  )
+
+  it.live("rejects invalid credentials with an error page", () =>
+    Effect.gen(function* () {
+      resetRateLimit()
+      const response = yield* formPost("username=opencode&password=wrong")
+      const body = yield* responseText(response)
+
+      expect(response.status).toBe(401)
+      expect(body).toContain("Invalid username or password")
+      expect(response.headers.get("set-cookie")).toBeNull()
+    }),
+  )
+
+  it.live("rejects a valid password with the wrong username", () =>
+    Effect.gen(function* () {
+      resetRateLimit()
+      const response = yield* formPost("username=intruder&password=secret")
+
+      expect(response.status).toBe(401)
+      expect(response.headers.get("set-cookie")).toBeNull()
+    }),
+  )
+
+  it.live("signs in with remember me and sets a persistent cookie", () =>
+    Effect.gen(function* () {
+      const response = yield* formPost("username=opencode&password=secret&remember=on")
+      const setCookie = response.headers.get("set-cookie") ?? ""
+      const token = /opencode_session=([^;]+)/.exec(setCookie)?.[1] ?? ""
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/")
+      expect(setCookie.toLowerCase()).toContain("max-age=2592000")
+      expect(setCookie.toLowerCase()).toContain("httponly")
+      expect(setCookie.toLowerCase()).toContain("samesite=lax")
+      expect(setCookie.toLowerCase()).toContain("path=/")
+      expect(ServerSession.isValid(token)).toBe(true)
+    }),
+  )
+
+  it.live("signs in without remember me and sets a session cookie", () =>
+    Effect.gen(function* () {
+      const response = yield* formPost("username=opencode&password=secret")
+      const setCookie = response.headers.get("set-cookie") ?? ""
+      const token = /opencode_session=([^;]+)/.exec(setCookie)?.[1] ?? ""
+
+      expect(response.status).toBe(302)
+      expect(setCookie.toLowerCase()).not.toContain("max-age")
+      expect(ServerSession.isValid(token)).toBe(true)
+    }),
+  )
+
+  it.live("returns a signed-in browser to the page it requested", () =>
+    Effect.gen(function* () {
+      const response = yield* formPost("username=opencode&password=secret&remember=on&next=/some/page")
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/some/page")
+    }),
+  )
+
+  it.live("rejects open-redirect next values", () =>
+    Effect.gen(function* () {
+      const body = yield* formPost("username=opencode&password=secret&next=//evil.example")
+      const query = yield* app({ password: "secret" }).request("/sign-in?next=https%3A%2F%2Fevil.example", {
+        method: "POST",
+        body: "username=opencode&password=secret",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+      })
+
+      expect(body.status).toBe(302)
+      expect(body.headers.get("location")).toBe("/")
+      expect(query.status).toBe(302)
+      expect(query.headers.get("location")).toBe("/")
+    }),
+  )
+
+  it.live("rejects sign-in attempts from foreign origins", () =>
+    Effect.gen(function* () {
+      const response = yield* formPost("username=opencode&password=secret", { origin: "http://evil.example" })
+
+      expect(response.status).toBe(403)
+      expect(response.headers.get("set-cookie")).toBeNull()
+    }),
+  )
+
+  it.live("signs out and clears the session cookie", () =>
+    Effect.gen(function* () {
+      const token = ServerSession.issue(true)
+      const response = yield* app({ password: "secret" }).request("/sign-out", {
+        method: "POST",
+        headers: { cookie: `opencode_session=${token}` },
+      })
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/sign-in")
+      const setCookie = response.headers.get("set-cookie") ?? ""
+      expect(setCookie.toLowerCase()).toContain("max-age=0")
+      expect(ServerSession.isValid(token)).toBe(false)
+    }),
+  )
+
+  it.live("ignores sign-out without a session cookie", () =>
+    Effect.gen(function* () {
+      const response = yield* app({ password: "secret" }).request("/sign-out", { method: "POST" })
+
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe("/sign-in")
+    }),
+  )
+
+  it.effect("locks out after ten failures and unlocks after a minute", () =>
+    Effect.gen(function* () {
+      // The web handler runs in its own runtime, so hand it a TestClock
+      // through the request context to keep the lockout expiry deterministic.
+      const clock = yield* TestClock.make()
+      const context = Context.make(Clock.Clock, clock) as Context.Context<unknown>
+      resetRateLimit()
+      for (let i = 0; i < 10; i++) {
+        const failed = yield* formPost("username=opencode&password=wrong", undefined, context)
+        expect(failed.status).toBe(401)
+      }
+
+      const locked = yield* formPost("username=opencode&password=secret", undefined, context)
+      expect(locked.status).toBe(429)
+      expect(Number(locked.headers.get("retry-after"))).toBeGreaterThan(0)
+
+      yield* clock.adjust("1 minute")
+
+      const unlocked = yield* formPost("username=opencode&password=secret", undefined, context)
+      expect(unlocked.status).toBe(302)
+      resetRateLimit()
+    }),
+  )
+})

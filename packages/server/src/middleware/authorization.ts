@@ -1,4 +1,5 @@
 import { ServerAuth } from "../auth"
+import { ServerSession } from "../auth/session"
 import { UnauthorizedError } from "@opencode-ai/protocol/errors"
 import { Authorization } from "@opencode-ai/protocol/middleware/authorization"
 export { Authorization } from "@opencode-ai/protocol/middleware/authorization"
@@ -48,6 +49,8 @@ export const authorizationLayer = Layer.effect(
         if (hasPtyConnectTicketURL(new URL(request.url, "http://localhost"))) return yield* effect
         const credential = yield* credentialFromRequest(request)
         if (ServerAuth.authorized(credential, config)) return yield* effect
+        const token = ServerSession.tokenFromCookies(request.cookies)
+        if (token !== undefined && ServerSession.isValid(token)) return yield* effect
         yield* HttpEffect.appendPreResponseHandler((_request, response) =>
           Effect.succeed(HttpServerResponse.setHeader(response, "www-authenticate", WWW_AUTHENTICATE)),
         )

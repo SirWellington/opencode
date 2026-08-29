@@ -42,6 +42,14 @@ Set `OPENCODE_SERVER_PASSWORD` to protect the server with HTTP basic auth. The u
 OPENCODE_SERVER_PASSWORD=your-password opencode serve
 ```
 
+Browsers are redirected to a sign-in page instead of the native password prompt. Check "Remember me" to stay signed in for 30 days, or leave it unchecked to end the session when the browser is closed.
+
+| Method | Path        | Description                                                       |
+| ------ | ----------- | ----------------------------------------------------------------- |
+| `GET`  | `/sign-in`  | Show the sign-in page                                             |
+| `POST` | `/sign-in`  | Sign in. Form fields: `username`, `password`, `remember`, `next`  |
+| `POST` | `/sign-out` | End the session and clear the `opencode_session` cookie           |
+
 ---
 
 ### How it works
