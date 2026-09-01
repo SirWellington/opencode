@@ -68,6 +68,7 @@ import { SessionExecution } from "@opencode-ai/core/session/execution"
 import * as SessionExecutionLocal from "@opencode-ai/core/session/execution/local"
 import { lazy } from "@/util/lazy"
 import { CorsConfig, isAllowedCorsOrigin, type CorsOptions } from "@opencode-ai/server/cors"
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { serveUIEffect } from "@/server/shared/ui"
 import { signInRoute } from "@/server/shared/sign-in"
 import { ServerAuth } from "@/server/auth"
@@ -291,6 +292,7 @@ export function createRoutes(
       corsVaryFix,
       fenceLayer,
       cors(corsOptions),
+      ServerRateLimit.layer,
       AppNodeBuilderV1.build(MoveSession.node, [[LocationServiceMap.node, locationServiceMapV2]]),
       HttpServer.layerServices,
     ]),

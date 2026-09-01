@@ -1,21 +1,9 @@
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { ServerSession } from "@opencode-ai/server/auth/session"
 import { ServerAuth } from "@/server/auth"
 import { Clock, Effect, Option, Stream } from "effect"
 import { Cookies, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import { createHash, timingSafeEqual } from "node:crypto"
-
-const MAX_FAILURES = 10
-const LOCKOUT_MS = 60_000
-
-const lockout = {
-  failures: 0,
-  lockedUntil: 0,
-}
-
-export function resetRateLimit() {
-  lockout.failures = 0
-  lockout.lockedUntil = 0
-}
 
 function escapeHtml(value: string) {
   const map: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }
@@ -116,19 +104,22 @@ function getSignIn(request: HttpServerRequest.HttpServerRequest, config: ServerA
   return signInPage(safeNext(new URL(request.url, "http://localhost").searchParams.get("next")), undefined)
 }
 
-function postSignIn(request: HttpServerRequest.HttpServerRequest, config: ServerAuth.Info) {
+function postSignIn(
+  request: HttpServerRequest.HttpServerRequest,
+  config: ServerAuth.Info,
+  rateLimit: ServerRateLimit.RateLimit,
+) {
   return Effect.gen(function* () {
     if (!ServerAuth.required(config)) return HttpServerResponse.redirect("/")
     if (isCrossOrigin(request))
       return HttpServerResponse.text("Forbidden", { status: 403, headers: { "cache-control": "no-store" } })
     const now = yield* Clock.currentTimeMillis
-    if (now < lockout.lockedUntil) {
-      const retryAfter = Math.max(1, Math.ceil((lockout.lockedUntil - now) / 1000))
+    const retryAfter = rateLimit.retryAfterSeconds(now)
+    if (retryAfter > 0)
       return HttpServerResponse.text("Too many sign-in attempts. Try again later.", {
         status: 429,
         headers: { "retry-after": String(retryAfter), "cache-control": "no-store" },
       })
-    }
     const params = yield* formParams(request)
     const username = params.get("username") ?? ""
     const password = params.get("password") ?? ""
@@ -138,12 +129,10 @@ function postSignIn(request: HttpServerRequest.HttpServerRequest, config: Server
     const next = safeNext(params.get("next") ?? new URL(request.url, "http://localhost").searchParams.get("next"))
     const expected = Option.isSome(config.password) ? config.password.value : ""
     if (!safeEqual(username, config.username) || !safeEqual(password, expected)) {
-      lockout.failures += 1
-      if (lockout.failures >= MAX_FAILURES) lockout.lockedUntil = now + LOCKOUT_MS
+      rateLimit.recordFailure(now)
       return signInPage(next, "Invalid username or password")
     }
-    lockout.failures = 0
-    lockout.lockedUntil = 0
+    rateLimit.reset()
     const token = ServerSession.issue(remember)
     const options: { httpOnly: boolean; sameSite: "lax"; path: string; maxAge?: number } = {
       httpOnly: true,
@@ -177,8 +166,9 @@ function postSignOut(request: HttpServerRequest.HttpServerRequest): Effect.Effec
 export const signInRoute = HttpRouter.use((router) =>
   Effect.gen(function* () {
     const config = yield* ServerAuth.Config
+    const rateLimit = yield* ServerRateLimit.Service
     yield* router.add("GET", "/sign-in", (request) => Effect.succeed(getSignIn(request, config)))
-    yield* router.add("POST", "/sign-in", (request) => postSignIn(request, config))
+    yield* router.add("POST", "/sign-in", (request) => postSignIn(request, config, rateLimit))
     yield* router.add("POST", "/sign-out", postSignOut)
   }),
 )

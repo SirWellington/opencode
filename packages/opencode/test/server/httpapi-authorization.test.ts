@@ -1,4 +1,5 @@
 import { NodeHttpServer } from "@effect/platform-node"
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { ServerSession } from "@opencode-ai/server/auth/session"
 import { describe, expect } from "bun:test"
 import { Effect, Layer, Option, Schema } from "effect"
@@ -50,12 +51,12 @@ const serverHandlers = HttpApiBuilder.group(ServerApi, "test.v2", (handlers) =>
 const apiLayer = HttpRouter.serve(
   HttpApiBuilder.layer(Api).pipe(Layer.provide(handlers), Layer.provide(authorizationLayer)),
   { disableListenLog: true, disableLogger: true },
-).pipe(Layer.provideMerge(NodeHttpServer.layerTest))
+).pipe(Layer.provideMerge(NodeHttpServer.layerTest), Layer.provideMerge(ServerRateLimit.layer))
 
 const v2ApiLayer = HttpRouter.serve(
   HttpApiBuilder.layer(ServerApi).pipe(Layer.provide(serverHandlers), Layer.provide(serverAuthorizationLayer)),
   { disableListenLog: true, disableLogger: true },
-).pipe(Layer.provideMerge(NodeHttpServer.layerTest))
+).pipe(Layer.provideMerge(NodeHttpServer.layerTest), Layer.provideMerge(ServerRateLimit.layer))
 
 const noAuthLayer = ServerAuth.Config.configLayer({ password: Option.none(), username: "opencode" })
 const secretLayer = ServerAuth.Config.configLayer({ password: Option.some("secret"), username: "opencode" })
@@ -198,6 +199,42 @@ describe("HttpApi authorization middleware", () => {
 
       expect(response.status).toBe(200)
       expect(body).toBe("ok")
+    }),
+  )
+
+  itSecret.live("rate-limits repeated bad basic auth attempts", () =>
+    Effect.gen(function* () {
+      const rateLimit = yield* ServerRateLimit.Service
+      rateLimit.reset()
+      for (let i = 0; i < 10; i++) {
+        const bad = yield* HttpClientRequest.get("/probe")
+          .pipe(HttpClientRequest.setHeader("authorization", basic("opencode", "wrong")), HttpClient.execute)
+        expect(bad.status).toBe(401)
+      }
+      // Correct password, but locked out by the shared limiter.
+      const locked = yield* HttpClientRequest.get("/probe")
+        .pipe(HttpClientRequest.setHeader("authorization", basic("opencode", "secret")), HttpClient.execute)
+      expect(locked.status).toBe(401)
+      expect(locked.headers["retry-after"]).toBeDefined()
+      rateLimit.reset()
+    }),
+  )
+
+  itV2Secret.live("rate-limits repeated bad v2 auth attempts", () =>
+    Effect.gen(function* () {
+      const rateLimit = yield* ServerRateLimit.Service
+      rateLimit.reset()
+      for (let i = 0; i < 10; i++) {
+        const bad = yield* HttpClientRequest.get("/api/probe")
+          .pipe(HttpClientRequest.setHeader("authorization", basic("opencode", "wrong")), HttpClient.execute)
+        expect(bad.status).toBe(401)
+      }
+      // Correct password, but locked out; the response carries a retry-after hint.
+      const locked = yield* HttpClientRequest.get("/api/probe")
+        .pipe(HttpClientRequest.setHeader("authorization", basic("opencode", "secret")), HttpClient.execute)
+      expect(locked.status).toBe(401)
+      expect(locked.headers["retry-after"]).toBeDefined()
+      rateLimit.reset()
     }),
   )
 })

@@ -1,10 +1,11 @@
 import { ServerAuth } from "../auth"
+import { ServerRateLimit } from "../auth/rate-limit"
 import { ServerSession } from "../auth/session"
 import { UnauthorizedError } from "@opencode-ai/protocol/errors"
 import { Authorization } from "@opencode-ai/protocol/middleware/authorization"
 export { Authorization } from "@opencode-ai/protocol/middleware/authorization"
 import { hasPtyConnectTicketURL } from "@opencode-ai/protocol/groups/pty"
-import { Effect, Encoding, Layer, Redacted } from "effect"
+import { Clock, Effect, Encoding, Layer, Redacted } from "effect"
 import { HttpEffect, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 
 const AUTH_TOKEN_QUERY = "auth_token"
@@ -36,25 +37,50 @@ function credentialFromRequest(request: HttpServerRequest.HttpServerRequest) {
   return Effect.succeed(emptyCredential())
 }
 
+function attemptedAuth(request: HttpServerRequest.HttpServerRequest) {
+  if (/^Basic\s+/i.test(request.headers.authorization ?? "")) return true
+  return new URL(request.url, "http://localhost").searchParams.has(AUTH_TOKEN_QUERY)
+}
+
+function unauthorized(retryAfter: number) {
+  return Effect.gen(function* () {
+    if (retryAfter > 0)
+      yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+        Effect.succeed(HttpServerResponse.setHeader(response, "retry-after", String(retryAfter))),
+      )
+    yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+      Effect.succeed(HttpServerResponse.setHeader(response, "www-authenticate", WWW_AUTHENTICATE)),
+    )
+    return yield* new UnauthorizedError({ message: "Authentication required" })
+  })
+}
+
 export const authorizationLayer = Layer.effect(
   Authorization,
   Effect.gen(function* () {
     const config = yield* ServerAuth.Config
     if (!ServerAuth.required(config)) return Authorization.of((effect) => effect)
+    const rateLimit = yield* ServerRateLimit.Service
     return Authorization.of((effect) =>
       Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest
         // Browsers cannot set headers on WebSocket upgrades, so a ticketed PTY connect skips
         // credential checks here; the connect handler consumes and validates the ticket.
         if (hasPtyConnectTicketURL(new URL(request.url, "http://localhost"))) return yield* effect
-        const credential = yield* credentialFromRequest(request)
-        if (ServerAuth.authorized(credential, config)) return yield* effect
         const token = ServerSession.tokenFromCookies(request.cookies)
         if (token !== undefined && ServerSession.isValid(token)) return yield* effect
-        yield* HttpEffect.appendPreResponseHandler((_request, response) =>
-          Effect.succeed(HttpServerResponse.setHeader(response, "www-authenticate", WWW_AUTHENTICATE)),
-        )
-        return yield* new UnauthorizedError({ message: "Authentication required" })
+        if (!attemptedAuth(request)) return yield* unauthorized(0)
+        const now = yield* Clock.currentTimeMillis
+        const retryAfter = rateLimit.retryAfterSeconds(now)
+        if (retryAfter === 0) {
+          const credential = yield* credentialFromRequest(request)
+          if (ServerAuth.authorized(credential, config)) {
+            rateLimit.reset()
+            return yield* effect
+          }
+          rateLimit.recordFailure(now)
+        }
+        return yield* unauthorized(retryAfter)
       }),
     )
   }),

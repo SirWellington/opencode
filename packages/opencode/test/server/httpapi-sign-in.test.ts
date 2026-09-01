@@ -1,11 +1,12 @@
 import { describe, expect } from "bun:test"
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { ServerSession } from "@opencode-ai/server/auth/session"
 import * as TestClock from "effect/testing/TestClock"
 import { Clock, Context, Effect, Layer, Option } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/unstable/http"
 import { ServerAuth } from "../../src/server/auth"
 import { authorizationRouterMiddleware } from "../../src/server/routes/instance/httpapi/middleware/authorization"
-import { resetRateLimit, signInRoute } from "../../src/server/shared/sign-in"
+import { signInRoute } from "../../src/server/shared/sign-in"
 import { testEffect } from "../lib/effect"
 
 function authConfigLayer(input?: { password?: string; username?: string }) {
@@ -26,11 +27,15 @@ const pageRoute = HttpRouter.use((router) =>
 // router middleware the UI fallback uses, plus the real sign-in routes.
 function app(
   input?: { password?: string; username?: string },
+  // The web handler takes an opaque request context; the cast is the seam that
+  // lets tests hand a TestClock through to the handler.
+  // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
   context: Context.Context<unknown> = Context.empty() as Context.Context<unknown>,
 ) {
   const handler = HttpRouter.toWebHandler(
     Layer.mergeAll(pageRoute, signInRoute).pipe(
       Layer.provide(authConfigLayer(input)),
+      Layer.provide(ServerRateLimit.layer),
       Layer.provide(HttpServer.layerServices),
     ),
     { disableLogger: true },
@@ -148,7 +153,6 @@ describe("sign-in page", () => {
 
   it.live("rejects invalid credentials with an error page", () =>
     Effect.gen(function* () {
-      resetRateLimit()
       const response = yield* formPost("username=opencode&password=wrong")
       const body = yield* responseText(response)
 
@@ -160,7 +164,6 @@ describe("sign-in page", () => {
 
   it.live("rejects a valid password with the wrong username", () =>
     Effect.gen(function* () {
-      resetRateLimit()
       const response = yield* formPost("username=intruder&password=secret")
 
       expect(response.status).toBe(401)
@@ -259,23 +262,93 @@ describe("sign-in page", () => {
     Effect.gen(function* () {
       // The web handler runs in its own runtime, so hand it a TestClock
       // through the request context to keep the lockout expiry deterministic.
+      // One app() instance is reused so its single rate limiter accumulates.
       const clock = yield* TestClock.make()
+      // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
       const context = Context.make(Clock.Clock, clock) as Context.Context<unknown>
-      resetRateLimit()
+      const a = app({ password: "secret" }, context)
+      const post = (body: string) =>
+        a.request("/sign-in", {
+          method: "POST",
+          body,
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+        })
       for (let i = 0; i < 10; i++) {
-        const failed = yield* formPost("username=opencode&password=wrong", undefined, context)
+        const failed = yield* post("username=opencode&password=wrong")
         expect(failed.status).toBe(401)
       }
 
-      const locked = yield* formPost("username=opencode&password=secret", undefined, context)
+      const locked = yield* post("username=opencode&password=secret")
       expect(locked.status).toBe(429)
       expect(Number(locked.headers.get("retry-after"))).toBeGreaterThan(0)
 
       yield* clock.adjust("1 minute")
 
-      const unlocked = yield* formPost("username=opencode&password=secret", undefined, context)
+      const unlocked = yield* post("username=opencode&password=secret")
       expect(unlocked.status).toBe(302)
-      resetRateLimit()
+    }),
+  )
+
+  it.effect("locks out repeated bad basic auth on protected pages with 429", () =>
+    Effect.gen(function* () {
+      const clock = yield* TestClock.make()
+      // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+      const context = Context.make(Clock.Clock, clock) as Context.Context<unknown>
+      const a = app({ password: "secret" }, context)
+      const basic = (password: string) => ({ authorization: `Basic ${btoa(`opencode:${password}`)}` })
+      for (let i = 0; i < 10; i++) {
+        const failed = yield* a.request("/", { headers: basic("wrong") })
+        expect(failed.status).toBe(401)
+      }
+
+      const locked = yield* a.request("/", { headers: basic("secret") })
+      expect(locked.status).toBe(429)
+      expect(Number(locked.headers.get("retry-after"))).toBeGreaterThan(0)
+
+      yield* clock.adjust("1 minute")
+
+      const unlocked = yield* a.request("/", { headers: basic("secret") })
+      expect(unlocked.status).toBe(200)
+    }),
+  )
+
+  it.effect("shares the failure counter across the sign-in form and basic auth", () =>
+    Effect.gen(function* () {
+      const clock = yield* TestClock.make()
+      // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+      const context = Context.make(Clock.Clock, clock) as Context.Context<unknown>
+      const a = app({ password: "secret" }, context)
+      const post = (body: string) =>
+        a.request("/sign-in", {
+          method: "POST",
+          body,
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+        })
+      for (let i = 0; i < 5; i++) expect((yield* post("username=opencode&password=wrong")).status).toBe(401)
+      for (let i = 0; i < 5; i++)
+        expect((yield* a.request("/", { headers: { authorization: `Basic ${btoa("opencode:wrong")}` } })).status).toBe(
+          401,
+        )
+      // Ten combined failures across channels lock out even a correct basic auth.
+      const locked = yield* a.request("/", { headers: { authorization: `Basic ${btoa("opencode:secret")}` } })
+      expect(locked.status).toBe(429)
+    }),
+  )
+
+  it.effect("keeps existing sessions working during lockout", () =>
+    Effect.gen(function* () {
+      const clock = yield* TestClock.make()
+      // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+      const context = Context.make(Clock.Clock, clock) as Context.Context<unknown>
+      const a = app({ password: "secret" }, context)
+      const token = ServerSession.issue(true)
+      for (let i = 0; i < 10; i++)
+        expect((yield* a.request("/", { headers: { authorization: `Basic ${btoa("opencode:wrong")}` } })).status).toBe(
+          401,
+        )
+      // A valid session still works even while new credential attempts are locked out.
+      const session = yield* a.request("/", { headers: { accept: "text/html", cookie: `opencode_session=${token}` } })
+      expect(session.status).toBe(200)
     }),
   )
 })

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { describe, expect } from "bun:test"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { ConfigProvider, Effect, Layer, Option } from "effect"
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { ServerSession } from "@opencode-ai/server/auth/session"
 import { AppNodeBuilder } from "@opencode-ai/core/effect/app-node-builder"
 import {
@@ -105,6 +106,7 @@ function uiApp(input?: {
       }),
     ).pipe(
       Layer.provide(authorizationRouterMiddleware.layer.pipe(Layer.provide(authConfigLayer(input)))),
+      Layer.provide(ServerRateLimit.layer),
       Layer.provide([
         fsUtilLayer,
         input?.client ?? httpClient(new Response("ui")),

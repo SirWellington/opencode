@@ -1,7 +1,8 @@
+import { ServerRateLimit } from "@opencode-ai/server/auth/rate-limit"
 import { ServerSession } from "@opencode-ai/server/auth/session"
 import { ServerAuth } from "@/server/auth"
-import { Effect, Encoding, Layer, Redacted } from "effect"
-import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
+import { Clock, Effect, Encoding, Layer, Redacted } from "effect"
+import { HttpEffect, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http"
 import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi"
 import { hasPtyConnectTicketURL } from "@/server/shared/pty-ticket"
 import { isPublicUIPath } from "@/server/shared/public-ui"
@@ -20,6 +21,11 @@ function sessionAuthorized(request: HttpServerRequest.HttpServerRequest) {
 
 function isBrowserDocument(request: HttpServerRequest.HttpServerRequest) {
   return request.method === "GET" && (request.headers.accept ?? "").includes("text/html")
+}
+
+function attemptedAuth(request: HttpServerRequest.HttpServerRequest) {
+  if (/^Basic\s+/i.test(request.headers.authorization ?? "")) return true
+  return new URL(request.url, "http://localhost").searchParams.has(AUTH_TOKEN_QUERY)
 }
 
 function redirectToSignIn(request: HttpServerRequest.HttpServerRequest) {
@@ -51,16 +57,37 @@ function emptyCredential() {
   }
 }
 
+function unauthorized(retryAfter: number) {
+  return Effect.gen(function* () {
+    if (retryAfter > 0)
+      yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+        Effect.succeed(HttpServerResponse.setHeader(response, "retry-after", String(retryAfter))),
+      )
+    return yield* new HttpApiError.Unauthorized({})
+  })
+}
+
 function validateCredential<A, E, R>(
   effect: Effect.Effect<A, E, R>,
   request: HttpServerRequest.HttpServerRequest,
   credential: ServerAuth.DecodedCredentials,
   config: ServerAuth.Info,
+  rateLimit: ServerRateLimit.RateLimit,
 ) {
+  if (!ServerAuth.required(config)) return effect
+  if (sessionAuthorized(request)) return effect
+  if (!attemptedAuth(request)) return unauthorized(0)
   return Effect.gen(function* () {
-    if (!ServerAuth.required(config)) return yield* effect
-    if (ServerAuth.authorized(credential, config) || sessionAuthorized(request)) return yield* effect
-    return yield* new HttpApiError.Unauthorized({})
+    const now = yield* Clock.currentTimeMillis
+    const retryAfter = rateLimit.retryAfterSeconds(now)
+    if (retryAfter === 0) {
+      if (ServerAuth.authorized(credential, config)) {
+        rateLimit.reset()
+        return yield* effect
+      }
+      rateLimit.recordFailure(now)
+    }
+    return yield* unauthorized(retryAfter)
   })
 }
 
@@ -97,16 +124,35 @@ function validateRawCredential<A, E, R>(
   request: HttpServerRequest.HttpServerRequest,
   credential: ServerAuth.DecodedCredentials,
   config: ServerAuth.Info,
+  rateLimit: ServerRateLimit.RateLimit,
 ) {
   if (!ServerAuth.required(config)) return effect
-  if (ServerAuth.authorized(credential, config) || sessionAuthorized(request)) return effect
-  if (isBrowserDocument(request)) return Effect.succeed(redirectToSignIn(request))
-  return Effect.succeed(HttpServerResponse.empty({ status: UNAUTHORIZED }))
+  if (sessionAuthorized(request)) return effect
+  if (!attemptedAuth(request)) {
+    if (isBrowserDocument(request)) return Effect.succeed(redirectToSignIn(request))
+    return Effect.succeed(HttpServerResponse.empty({ status: UNAUTHORIZED }))
+  }
+  return Effect.gen(function* () {
+    const now = yield* Clock.currentTimeMillis
+    const retryAfter = rateLimit.retryAfterSeconds(now)
+    if (retryAfter > 0)
+      return HttpServerResponse.text("Too many sign-in attempts. Try again later.", {
+        status: 429,
+        headers: { "retry-after": String(retryAfter), "cache-control": "no-store" },
+      })
+    if (ServerAuth.authorized(credential, config)) {
+      rateLimit.reset()
+      return yield* effect
+    }
+    rateLimit.recordFailure(now)
+    return HttpServerResponse.empty({ status: UNAUTHORIZED })
+  })
 }
 
 export const authorizationRouterMiddleware = HttpRouter.middleware()(
   Effect.gen(function* () {
     const config = yield* ServerAuth.Config
+    const rateLimit = yield* ServerRateLimit.Service
     if (!ServerAuth.required(config)) return (effect) => effect
 
     return (effect) =>
@@ -115,7 +161,7 @@ export const authorizationRouterMiddleware = HttpRouter.middleware()(
         const url = new URL(request.url, "http://localhost")
         if (isPublicUIPath(request.method, url.pathname)) return yield* effect
         return yield* credentialFromURL(url, request).pipe(
-          Effect.flatMap((credential) => validateRawCredential(effect, request, credential, config)),
+          Effect.flatMap((credential) => validateRawCredential(effect, request, credential, config, rateLimit)),
         )
       })
   }),
@@ -126,11 +172,12 @@ export const authorizationLayer = Layer.effect(
   Effect.gen(function* () {
     const config = yield* ServerAuth.Config
     if (!ServerAuth.required(config)) return Authorization.of((effect) => effect)
+    const rateLimit = yield* ServerRateLimit.Service
     return Authorization.of((effect) =>
       Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest
         return yield* credentialFromRequest(request).pipe(
-          Effect.flatMap((credential) => validateCredential(effect, request, credential, config)),
+          Effect.flatMap((credential) => validateCredential(effect, request, credential, config, rateLimit)),
         )
       }),
     )
@@ -142,13 +189,14 @@ export const ptyConnectAuthorizationLayer = Layer.effect(
   Effect.gen(function* () {
     const config = yield* ServerAuth.Config
     if (!ServerAuth.required(config)) return PtyConnectAuthorization.of((effect) => effect)
+    const rateLimit = yield* ServerRateLimit.Service
     return PtyConnectAuthorization.of((effect) =>
       Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest
         const url = new URL(request.url, "http://localhost")
         if (hasPtyConnectTicketURL(url)) return yield* effect
         return yield* credentialFromURL(url, request).pipe(
-          Effect.flatMap((credential) => validateCredential(effect, request, credential, config)),
+          Effect.flatMap((credential) => validateCredential(effect, request, credential, config, rateLimit)),
         )
       }),
     )
